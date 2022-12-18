@@ -2,6 +2,7 @@ import pygame
 from PIL import Image
 import os
 import shutil
+import random
 
 from configs import Configs
 
@@ -29,6 +30,7 @@ class FlappyBirdGame:
         self._clock = pygame.time.Clock()
 
         self._pipes = []
+        self._counted_pipes_for_scores = []
         self._backgrounds = []
 
         self._game_active = True
@@ -64,14 +66,30 @@ class FlappyBirdGame:
 
     def _create_pipes(self):
         """Трубы создаются если список труб пустой, либо если последние трубы в списке прошли больше дистанции на
-        экране, чем расстояние между трубами."""
+        экране, чем расстояние между трубами.
+
+         Также трубы рандомно смещаются относительно предыдущей пары труб."""
 
         if len(self._pipes) == 0 or \
-                self._pipes[len(self._pipes) - 1].x < self._configs.screen_width - self._configs.pipe_distance:
-            self._pipes.append(pygame.Rect(self._configs.pipe_start_width, self._configs.top_pipe_start_height,
-                                           self._configs.pipe_width, self._configs.pipe_height))
-            self._pipes.append(pygame.Rect(self._configs.pipe_start_width, self._configs.bottom_pipe_start_height,
-                                           self._configs.pipe_width, self._configs.pipe_height))
+                self._pipes[len(self._pipes) - 1].x < self._configs.screen_width - self._configs.distance_between_pipes:
+
+            self._pipes.append(pygame.Rect(self._configs.pipe_start_width,
+                                           self._configs.top_pipe_start_height,
+                                           self._configs.pipe_width,
+                                           self._configs.pipes_gate_pos - self._configs.pipes_gate_size // 2))
+            self._pipes.append(pygame.Rect(self._configs.pipe_start_width,
+                                           self._configs.pipes_gate_pos + self._configs.pipes_gate_size // 2,
+                                           self._configs.pipe_width,
+                                           self._configs.screen_height -
+                                           (self._configs.pipes_gate_pos + self._configs.pipes_gate_size // 2)))
+            self._configs.pipes_gate_pos += \
+                random.choice((-self._configs.pipes_gate_size // 2, self._configs.pipes_gate_size // 2))
+
+            # Меняем расположение прохода между трубами так, чтобы при этом сверху и снизу всегда была труба.
+            if self._configs.pipes_gate_pos < self._configs.pipes_gate_size:
+                self._configs.pipes_gate_pos = self._configs.pipes_gate_size
+            elif self._configs.pipes_gate_pos > self._configs.screen_height - self._configs.pipes_gate_size:
+                self._configs.pipes_gate_pos = self._configs.screen_height - self._configs.pipes_gate_size
 
     def _check_state(self, pressed):
         """Метод проверяет состояние игры. В зависимости от состояния определенные действия игрока будут менять данное
@@ -95,20 +113,42 @@ class FlappyBirdGame:
             if self._bird.top < 0 or self._bird.bottom > self._configs.screen_height:
                 self._configs.state = 'fall'
 
+            # Проверка столкновений птицы с трубами и начисление очков:
             for pipe in self._pipes:
                 if self._bird.colliderect(pipe):
                     self._configs.state = 'fall'
 
+                if pipe.right < self._bird.left and pipe not in self._counted_pipes_for_scores:
+                    self._counted_pipes_for_scores.append(pipe)
+
+                    # Экспоненциальное увеличение скорости движения труб и начисления очков:
+                    if self._pipes.index(pipe) % 2 == 0 and self._pipes.index(pipe) != 0:
+                        self._configs.pipe_speed *= self._configs.pipe_speed_multiplier
+                        self._configs.background_speed = \
+                            self._configs.pipe_speed // self._configs.background_speed_multiplier
+                        self._configs.scores_multiplier += 1
+
+                    self._configs.scores += self._configs.scores_base_points * self._configs.scores_multiplier
+
         elif self._configs.state == 'fall':
             self._configs.lives -= 1
-            self._configs.state = 'start'
-            self._configs.reset_speed_and_acceleration()
+            self._configs.reset_pipes_gate_pos()
+            if self._configs.lives <= 0:
+                self._configs.state = 'game_over'
+                self._timer = self._configs.game_over_time
+            else:
+                self._configs.state = 'start'
+                self._configs.reset_speed_and_acceleration()
 
-            # Обновляем таймер:
-            self._timer = self._configs.FPS
+                # Обновляем таймер:
+                self._timer = self._configs.FPS
 
         elif self._configs.state == 'game_over':
-            pass
+            self._move_bird()
+            if self._timer == 0:
+                self._game_active = False
+                self._configs.reset_pipes_and_background_speed()
+                self._configs.reset_lives_and_scores()
 
     def _check_fly(self):
         """Если кнопка нажата или держится зажатой, то производится действие."""
@@ -161,6 +201,9 @@ class FlappyBirdGame:
             if pipe.right < 0:
                 self._pipes.remove(pipe)
 
+                if pipe in self._counted_pipes_for_scores:
+                    self._counted_pipes_for_scores.remove(pipe)
+
         self._check_fly()
 
     def _move_bird(self):
@@ -195,10 +238,10 @@ class FlappyBirdGame:
         # Отрисовка труб:
         for pipe in self._pipes:
             if pipe.y == 0:
-                pipe_image = self._top_pipe.get_rect(topleft=pipe.topleft)
+                pipe_image = self._top_pipe.get_rect(bottomleft=pipe.bottomleft)
                 self._screen.blit(self._top_pipe, pipe_image)
             else:
-                pipe_image = self._bottom_pipe.get_rect(bottomleft=pipe.bottomleft)
+                pipe_image = self._bottom_pipe.get_rect(topleft=pipe.topleft)
                 self._screen.blit(self._bottom_pipe, pipe_image)
 
         """Делим большое изображение 4 фреймов птицы так, чтобы получить одно маленькое. Также создаем вращение 

@@ -19,14 +19,12 @@ class ConfigsStorage:
     pipe_distance_from_screen_border: int = 100
     pipe_start_width: int = screen_width - pipe_distance_from_screen_border
     pipe_width: int = 52  # Пиксели изображения трубы
-    pipe_height: int = 320  # Пиксели изображения трубы
     top_pipe_start_height: int = 0
-    bottom_pipe_start_height: int = screen_height - pipe_height
     pipe_speed: int = 3
-    pipe_distance: int = pipe_distance_from_screen_border * 3
-
-    # State configs:
-    state: str = 'start'
+    distance_between_pipes: int = pipe_distance_from_screen_border * 3
+    pipe_speed_multiplier: float = 1.025
+    pipes_gate_size: int = screen_height // 4
+    pipes_gate_pos = int = screen_height // 2
 
     # Lives configs:
     lives: int = 3
@@ -41,9 +39,14 @@ class ConfigsStorage:
     scores_X_position: int = 10
     scores_Y_position: int = 10
     scores_font_size: int = 50
+    scores_base_points: int = 5
+    scores_multiplier: int = 1
 
     # Other configs
     background_speed: int = 1
+    background_speed_multiplier: int = 2
+    game_over_time: int = FPS * 4  # FPS * number of seconds before reboot
+    state: str = 'start'
 
 
 class Configs(ConfigsStorage):
@@ -62,3 +65,11 @@ class Configs(ConfigsStorage):
     def reset_lives_and_scores(self):
         self.lives = ConfigsStorage.lives
         self.scores = ConfigsStorage.scores
+        self.scores_multiplier = ConfigsStorage.scores_multiplier
+
+    def reset_pipes_and_background_speed(self):
+        self.pipe_speed = ConfigsStorage.pipe_speed
+        self.background_speed = ConfigsStorage.background_speed
+
+    def reset_pipes_gate_pos(self):
+        self.pipes_gate_pos = ConfigsStorage.pipes_gate_pos
