@@ -16,17 +16,16 @@ class FlappyBirdGame:
 
         self._frame = 0
         self._screen = pygame.display.set_mode((self._configs.screen_width, self._configs.screen_height))
+        pygame.display.set_caption('Flappy Bird')
 
         self._background_image = pygame.image.load(
-            self._change_picture_size_background('images/background-day.png',
-                                                 necessary_height=self._configs.screen_height))
+            self._change_picture_size('images/background-day.png', necessary_height=self._configs.screen_height))
         self._background_image_width = self._background_image.get_width()
         self._background_image_height = self._background_image.get_height()
 
         self._bird_image = pygame.image.load('images/new_yellow.png')
-        self._top_pipe = pygame.image.load('images/rotated_green_pipe.png')
-        self._bottom_pipe = pygame.image.load('images/pipe-green.png')
-        pygame.display.set_caption('Flappy Bird')
+        self._create_pipes_images()
+
         self._clock = pygame.time.Clock()
 
         self._pipes = []
@@ -46,7 +45,7 @@ class FlappyBirdGame:
         self._scores_bird_image = pygame.image.load('images/yellow_bird.png')
 
     @staticmethod
-    def _change_picture_size_background(path_to_picture, necessary_width=None, necessary_height=None):
+    def _change_picture_size(path_to_picture, necessary_width=None, necessary_height=None):
         picture_name = path_to_picture.split('/')[-1]
         image = Image.open(path_to_picture)
         default_width, default_height = image.size
@@ -63,6 +62,21 @@ class FlappyBirdGame:
             rendered_bg = image.resize((necessary_width, default_height))
             rendered_bg.save(path_to_rendered_picture)
         return path_to_rendered_picture
+
+    def _create_pipes_images(self):
+        """Метод загружает изображения для верхней и нижней трубы и проверяет его размеры. Если длина экрана за вычетом
+        длины прохода между трубами больше, чем длина трубы, то изменяем длину труб, чтобы они красиво выглядели на
+        экране и не было пробелов между краем экрана и началом картинки трубы."""
+
+        self._top_pipe = pygame.image.load('images/rotated_green_pipe.png')
+        self._bottom_pipe = pygame.image.load('images/pipe-green.png')
+        pipe_height = self._top_pipe.get_height()
+        if pipe_height - self._configs.pipes_gate_size < self._configs.screen_height:
+            necessary_height = self._configs.screen_height - self._configs.pipes_gate_size
+            self._top_pipe = pygame.image.load(self._change_picture_size('images/rotated_green_pipe.png',
+                                                                         necessary_height=necessary_height))
+            self._bottom_pipe = pygame.image.load(self._change_picture_size('images/pipe-green.png',
+                                                                            necessary_height=necessary_height))
 
     def _create_pipes(self):
         """Трубы создаются если список труб пустой, либо если последние трубы в списке прошли больше дистанции на
