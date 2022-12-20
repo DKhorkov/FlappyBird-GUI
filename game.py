@@ -14,35 +14,64 @@ class FlappyBirdGame:
 
         self._configs = Configs()
 
-        self._frame = 0
+        # Screen:
         self._screen = pygame.display.set_mode((self._configs.screen_width, self._configs.screen_height))
         pygame.display.set_caption('Flappy Bird')
 
+        # Background:
         self._background_image = pygame.image.load(
             self._change_picture_size('images/background-day.png', necessary_height=self._configs.screen_height))
         self._background_image_width = self._background_image.get_width()
         self._background_image_height = self._background_image.get_height()
-
-        self._bird_image = pygame.image.load('images/new_yellow.png')
-        self._create_pipes_images()
-
-        self._clock = pygame.time.Clock()
-
-        self._pipes = []
-        self._counted_pipes_for_scores = []
         self._backgrounds = []
 
-        self._game_active = True
-        self._timer = self._configs.FPS  # Задержка в управлении перед началом игры или после смерти
+        # Pipes:
+        self._pipes = []
+        self._counted_pipes_for_scores = []
+        self._create_pipes_images()
+
+        # Bird:
+        self._bird = pygame.Rect(self._configs.bird_X_start_position, self._configs.bird_Y_start_position, 34, 24)
+        self._bird_image = pygame.image.load('images/new_yellow.png')
+        self._frame = 0
+
+        # Lives:
+        self._lives = pygame.Rect(self._configs.lives_X_position, self._configs.lives_Y_position, 24, 34)
+        self._lives_bird_rect = pygame.Rect(self._configs.lives_bird_X_position, self._configs.lives_bird_Y_position,
+                                            34, 24)
+        self._lives_bird_image = pygame.image.load('images/yellow_bird.png')
         self._lives_image = None
 
-        self._bird = pygame.Rect(self._configs.bird_X_start_position, self._configs.bird_Y_start_position, 34, 24)
-        self._lives = pygame.Rect(self._configs.lives_X_position, self._configs.lives_Y_position, 24, 34)
-
+        # Scores:
         self._scores_font = pygame.font.Font(None, self._configs.scores_font_size)
-        self._scores_bird_rect = pygame.Rect(self._configs.lives_bird_X_position, self._configs.lives_bird_Y_position,
-                                             34, 24)
-        self._scores_bird_image = pygame.image.load('images/yellow_bird.png')
+
+        # Start game:
+        self._start_message_rect = pygame.Rect(self._configs.start_message_X_position,
+                                               self._configs.start_message_Y_position,
+                                               self._configs.start_message_image_width,
+                                               self._configs.start_message_image_height)
+        self._start_message_image = pygame.image.load('images/start_message.png')
+        self._game_started = False
+
+        # Game over:
+        self._game_over_message_rect = pygame.Rect(self._configs.game_over_message_X_position,
+                                                   self._configs.game_over_message_Y_position,
+                                                   self._configs.game_over_message_image_width,
+                                                   self._configs.game_over_message_image_height)
+        self._game_over_message_image = pygame.image.load('images/gameover.png')
+
+        # Record:
+        if os.path.exists('record.txt'):
+            with open('record.txt', 'r') as record_file:
+                self._record = int(record_file.read())
+        else:
+            self._record = 0
+        self._record_font = pygame.font.Font(None, self._configs.scores_font_size)
+
+        # Other:
+        self._game_active = True
+        self._timer = 0
+        self._clock = pygame.time.Clock()
 
     @staticmethod
     def _change_picture_size(path_to_picture, necessary_width=None, necessary_height=None):
@@ -110,9 +139,9 @@ class FlappyBirdGame:
         состояние."""
 
         if self._configs.state == 'start':
-            if pressed and self._timer == 0 and len(self._pipes) == 0:
+            if pressed and len(self._pipes) == 0:
                 self._configs.state = 'play'
-            self._configs.reset_start_position(self._bird)
+            self._configs.reset_bird_start_position(self._bird)
 
         elif self._configs.state == 'play':
             if pressed:
@@ -143,6 +172,7 @@ class FlappyBirdGame:
                         self._configs.scores_multiplier += 1
 
                     self._configs.scores += self._configs.scores_base_points * self._configs.scores_multiplier
+                    self._check_record()
 
         elif self._configs.state == 'fall':
             self._configs.lives -= 1
@@ -152,24 +182,34 @@ class FlappyBirdGame:
                 self._timer = self._configs.game_over_time
             else:
                 self._configs.state = 'start'
-                self._configs.reset_speed_and_acceleration()
-
-                # Обновляем таймер:
-                self._timer = self._configs.FPS
+                self._configs.reset_bird_speed_and_acceleration()
 
         elif self._configs.state == 'game_over':
             self._move_bird()
             if self._timer == 0:
-                self._game_active = False
+                self._configs.state = 'start'
+                self._game_started = False
+                self._pipes.clear()
+                self._configs.reset_bird_start_position(self._bird)
                 self._configs.reset_pipes_and_background_speed()
                 self._configs.reset_lives_and_scores()
+                self._configs.reset_bird_speed_and_acceleration()
+
+    def _check_record(self):
+        if self._configs.scores > self._record:
+            self._record = self._configs.scores
+
+    @staticmethod
+    def _get_pressed():
+        mouse = pygame.mouse.get_pressed()
+        keys = pygame.key.get_pressed()
+        pressed = keys[pygame.K_SPACE] or mouse[0]  # Нажатие пробела или ЛКМ
+        return pressed
 
     def _check_fly(self):
         """Если кнопка нажата или держится зажатой, то производится действие."""
 
-        mouse = pygame.mouse.get_pressed()
-        keys = pygame.key.get_pressed()
-        pressed = keys[pygame.K_SPACE] or mouse[0]  # Нажатие пробела или ЛКМ
+        pressed = self._get_pressed()
         self._check_state(pressed)
 
     def _check_exit(self, event):
@@ -187,38 +227,42 @@ class FlappyBirdGame:
 
             self._check_exit(event)
 
-        if self._timer > 0:
-            self._timer -= 1
+        if not self._game_started:
+            if self._get_pressed():
+                self._game_started = True
+        else:
+            if self._timer > 0:
+                self._timer -= 1
 
-        """Меняем фрейм для создания анимации полета птицы. Деление с количеством ФПС сделано для плавности движения
-        крыльев, иначе слишком быстрая анимация"""
-        self._frame = (self._frame + 1 / (self._configs.FPS / 15)) % 4
+            """Меняем фрейм для создания анимации полета птицы. Деление с количеством ФПС сделано для плавности движения
+            крыльев, иначе слишком быстрая анимация"""
+            self._frame = (self._frame + 1 / (self._configs.FPS / 15)) % 4
 
-        # Движение фона:
-        for i in range(len(self._backgrounds) - 1, -1, -1):
-            background = self._backgrounds[i]
-            background.x -= self._configs.background_speed
+            # Движение фона:
+            for i in range(len(self._backgrounds) - 1, -1, -1):
+                background = self._backgrounds[i]
+                background.x -= self._configs.background_speed
 
-            if background.right < 0:
-                self._backgrounds.remove(background)
+                if background.right < 0:
+                    self._backgrounds.remove(background)
 
-            """Добавление картинок на фон так, чтобы весь экран был покрыт фоном."""
-            if self._backgrounds[len(self._backgrounds) - 1].right <= self._configs.screen_width:
-                self._backgrounds.append(pygame.Rect(self._backgrounds[len(self._backgrounds) - 1].right, 0,
-                                                     self._background_image_width, self._background_image_height))
+                """Добавление картинок на фон так, чтобы весь экран был покрыт фоном."""
+                if self._backgrounds[len(self._backgrounds) - 1].right <= self._configs.screen_width:
+                    self._backgrounds.append(pygame.Rect(self._backgrounds[len(self._backgrounds) - 1].right, 0,
+                                                         self._background_image_width, self._background_image_height))
 
-        # Движение труб с конца по индексу в списке труб:
-        for i in range(len(self._pipes) - 1, -1, -1):
-            pipe = self._pipes[i]
-            pipe.x -= self._configs.pipe_speed
+            # Движение труб с конца по индексу в списке труб:
+            for i in range(len(self._pipes) - 1, -1, -1):
+                pipe = self._pipes[i]
+                pipe.x -= self._configs.pipe_speed
 
-            if pipe.right < 0:
-                self._pipes.remove(pipe)
+                if pipe.right < 0:
+                    self._pipes.remove(pipe)
 
-                if pipe in self._counted_pipes_for_scores:
-                    self._counted_pipes_for_scores.remove(pipe)
+                    if pipe in self._counted_pipes_for_scores:
+                        self._counted_pipes_for_scores.remove(pipe)
 
-        self._check_fly()
+            self._check_fly()
 
     def _move_bird(self):
         """Метод изменяет положение птицы, создавая эффект падения/гравитации.
@@ -236,11 +280,16 @@ class FlappyBirdGame:
         scores_text = self._scores_font.render(f'Scores: {self._configs.scores}', True,
                                                pygame.Color(self._configs.scores_color))
         self._screen.blit(scores_text, (self._configs.scores_X_position, self._configs.scores_Y_position))
-        self._screen.blit(self._scores_bird_image, self._scores_bird_rect)
 
     def _draw_lives(self):
         self._lives_image = pygame.image.load(f'images/{self._configs.lives}.png')
         self._screen.blit(self._lives_image, self._lives)
+        self._screen.blit(self._lives_bird_image, self._lives_bird_rect)
+
+    def _draw_record(self):
+        record_text = self._record_font.render(f'Record: {self._record}', True,
+                                               pygame.Color(self._configs.record_color))
+        self._screen.blit(record_text, (self._configs.record_X_position, self._configs.record_Y_position))
 
     def _update(self):
         """Метод обновляет экран и объекты, которые должны быть отрисованы на нем."""
@@ -266,6 +315,10 @@ class FlappyBirdGame:
 
         self._draw_lives()
         self._draw_scores()
+        self._draw_record()
+
+        if self._configs.state == 'game_over':
+            self._screen.blit(self._game_over_message_image, self._game_over_message_rect)
 
         pygame.display.update()
 
@@ -280,14 +333,23 @@ class FlappyBirdGame:
                 рамках движения фона в методе _check_events"""
         self._backgrounds.append(pygame.Rect(0, 0, self._background_image_width,
                                              self._background_image_height))
-
         while self._game_active:
-            self._check_events()
+            if not self._game_started:
+                self._screen.fill(self._configs.screen_fill_color)
+                self._screen.blit(self._start_message_image, self._start_message_rect)
+                self._check_events()
+                pygame.display.update()
+            else:
+                self._check_events()
+                self._update()
 
-            self._update()
             self._clock.tick(self._configs.FPS)
 
         self._clear_temporary_images()
+
+        # Сохраняем рекорд в файл:
+        with open('record.txt', 'w') as record_file:
+            record_file.write(str(self._record))
 
 
 if __name__ == '__main__':

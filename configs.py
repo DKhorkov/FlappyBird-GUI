@@ -8,6 +8,7 @@ class ConfigsStorage:
     screen_width: int = 1600
     screen_height: int = 900
     FPS: int = 60
+    screen_fill_color: str = 'black'
 
     # Bird configs:
     bird_speed: int = 0
@@ -42,6 +43,24 @@ class ConfigsStorage:
     scores_base_points: int = 5
     scores_multiplier: int = 1
 
+    # Start message image:
+    start_message_image_width = 184
+    start_message_image_height = 267
+    start_message_X_position = screen_width / 2 - start_message_image_width / 2
+    start_message_Y_position = screen_height / 2 - start_message_image_height / 2
+
+    # Game over message:
+    game_over_message_image_width = 192
+    game_over_message_image_height = 42
+    game_over_message_X_position = screen_width / 2 - game_over_message_image_width / 2
+    game_over_message_Y_position = screen_height / 2 - game_over_message_image_height / 2
+
+    # Record config:
+    record_X_position = screen_width / 2 - 100
+    record_Y_position = 10
+    record_font_size: int = 50
+    record_color: str = 'white'
+
     # Other configs
     background_speed: int = 1
     background_speed_multiplier: int = 2
@@ -54,12 +73,15 @@ class Configs(ConfigsStorage):
     def __init__(self):
         super(ConfigsStorage)
 
-    def reset_speed_and_acceleration(self):
+    def reset_bird_speed_and_acceleration(self):
         self.bird_acceleration = ConfigsStorage.bird_acceleration
         self.bird_speed = ConfigsStorage.bird_speed
 
-    def reset_start_position(self, bird):
-        self.bird_Y_start_position += (self.screen_height // 2 - self.bird_Y_start_position) * 0.1
+    def reset_bird_start_position(self, bird):
+        if self.lives > 0:
+            self.bird_Y_start_position += (self.screen_height // 2 - self.bird_Y_start_position) * 0.1
+        else:
+            self.bird_Y_start_position = ConfigsStorage.bird_Y_start_position
         bird.y = self.bird_Y_start_position
 
     def reset_lives_and_scores(self):
