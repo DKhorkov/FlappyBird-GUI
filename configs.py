@@ -67,6 +67,10 @@ class ConfigsStorage:
     game_over_time: int = FPS * 4  # FPS * number of seconds before reboot
     state: str = 'start'
 
+    # Music:
+    fly_sound_timer: int = 2
+    main_theme_volume: float = 0.1
+
 
 class Configs(ConfigsStorage):
 
@@ -95,3 +99,9 @@ class Configs(ConfigsStorage):
 
     def reset_pipes_gate_pos(self):
         self.pipes_gate_pos = ConfigsStorage.pipes_gate_pos
+
+    def reset_configs_after_exit(self):
+        self.reset_pipes_gate_pos()
+        self.reset_pipes_and_background_speed()
+        self.reset_lives_and_scores()
+        self.reset_bird_speed_and_acceleration()

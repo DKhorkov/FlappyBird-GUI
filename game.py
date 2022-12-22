@@ -17,6 +17,7 @@ class FlappyBirdGame:
         # Screen:
         self._screen = pygame.display.set_mode((self._configs.screen_width, self._configs.screen_height))
         pygame.display.set_caption('Flappy Bird')
+        pygame.display.set_icon(pygame.image.load('images/favicon.ico'))
 
         # Background:
         self._background_image = pygame.image.load(
@@ -73,6 +74,17 @@ class FlappyBirdGame:
         self._timer = 0
         self._clock = pygame.time.Clock()
 
+        # Music:
+        pygame.mixer.music.load('audio/main_theme.mp3')
+        pygame.mixer.music.set_volume(self._configs.main_theme_volume)
+        pygame.mixer.music.play(-1)  # -1, чтобы музыка играла бесконечно.
+
+        # Sounds:
+        self._fall_sound = pygame.mixer.Sound('audio/swoosh.ogg')
+        self._game_over_sound = pygame.mixer.Sound('audio/die.ogg')
+        self._hit_pipes_sounds = pygame.mixer.Sound('audio/hit.ogg')
+        self._fly_sound = pygame.mixer.Sound('audio/wing.ogg')
+
     @staticmethod
     def _change_picture_size(path_to_picture, necessary_width=None, necessary_height=None):
         picture_name = path_to_picture.split('/')[-1]
@@ -111,7 +123,7 @@ class FlappyBirdGame:
         """Трубы создаются если список труб пустой, либо если последние трубы в списке прошли больше дистанции на
         экране, чем расстояние между трубами.
 
-         Также трубы рандомно смещаются относительно предыдущей пары труб."""
+        Также трубы рандомно смещаются относительно предыдущей пары труб."""
 
         if len(self._pipes) == 0 or \
                 self._pipes[len(self._pipes) - 1].x < self._configs.screen_width - self._configs.distance_between_pipes:
@@ -134,66 +146,92 @@ class FlappyBirdGame:
             elif self._configs.pipes_gate_pos > self._configs.screen_height - self._configs.pipes_gate_size:
                 self._configs.pipes_gate_pos = self._configs.screen_height - self._configs.pipes_gate_size
 
+    def _start_state_algorithm(self, pressed):
+        if pressed and len(self._pipes) == 0:
+            self._configs.state = 'play'
+        self._configs.reset_bird_start_position(self._bird)
+
+    def _fall_state_algorithm(self):
+        self._configs.lives -= 1
+        self._configs.reset_pipes_gate_pos()
+        if self._configs.lives <= 0:
+            self._configs.state = 'game_over'
+            self._game_over_sound.play()
+            self._timer = self._configs.game_over_time
+        else:
+            self._configs.state = 'start'
+            self._configs.reset_bird_speed_and_acceleration()
+
+    def _game_over_state_algorithm(self):
+        self._move_bird()
+        if self._timer == 0:
+            self._configs.state = 'start'
+            self._game_started = False
+            self._pipes.clear()
+            self._configs.reset_bird_start_position(self._bird)
+            self._configs.reset_pipes_and_background_speed()
+            self._configs.reset_lives_and_scores()
+            self._configs.reset_bird_speed_and_acceleration()
+
+    def _play_state_algorithm(self, pressed):
+        if pressed:
+            self._configs.bird_acceleration -= 2
+            if self._configs.fly_sound_timer == 0:
+                self._fly_sound.play()
+                self._configs.fly_sound_timer = 2
+            else:
+                self._configs.fly_sound_timer -= 1
+        else:
+            self._configs.bird_acceleration = 0
+
+        self._move_bird()
+        self._create_pipes()
+        self._check_screen_border()
+        self._check_collisions_and_update_scores()
+
+    def _check_collisions_and_update_scores(self):
+        """Проверка столкновений птицы с трубами и начисление очков."""
+
+        for pipe in self._pipes:
+            if self._bird.colliderect(pipe):
+                self._configs.state = 'fall'
+                self._hit_pipes_sounds.play()
+
+            if pipe.right < self._bird.left and pipe not in self._counted_pipes_for_scores:
+                self._counted_pipes_for_scores.append(pipe)
+
+                # Экспоненциальное увеличение скорости движения труб и начисления очков:
+                if self._pipes.index(pipe) % 2 == 0 and self._pipes.index(pipe) != 0:
+                    self._configs.pipe_speed *= self._configs.pipe_speed_multiplier
+                    self._configs.background_speed = \
+                        self._configs.pipe_speed // self._configs.background_speed_multiplier
+                    self._configs.scores_multiplier += 1
+
+                self._configs.scores += self._configs.scores_base_points * self._configs.scores_multiplier
+                self._check_record()
+
+    def _check_screen_border(self):
+        """Проверка достижения границы экрана."""
+
+        if self._bird.top < 0 or self._bird.bottom > self._configs.screen_height:
+            self._configs.state = 'fall'
+            self._fall_sound.play()
+
     def _check_state(self, pressed):
         """Метод проверяет состояние игры. В зависимости от состояния определенные действия игрока будут менять данное
         состояние."""
 
         if self._configs.state == 'start':
-            if pressed and len(self._pipes) == 0:
-                self._configs.state = 'play'
-            self._configs.reset_bird_start_position(self._bird)
+            self._start_state_algorithm(pressed)
 
         elif self._configs.state == 'play':
-            if pressed:
-                self._configs.bird_acceleration -= 2
-            else:
-                self._configs.bird_acceleration = 0
-
-            self._move_bird()
-            self._create_pipes()
-
-            # Проверка достижения границы экрана:
-            if self._bird.top < 0 or self._bird.bottom > self._configs.screen_height:
-                self._configs.state = 'fall'
-
-            # Проверка столкновений птицы с трубами и начисление очков:
-            for pipe in self._pipes:
-                if self._bird.colliderect(pipe):
-                    self._configs.state = 'fall'
-
-                if pipe.right < self._bird.left and pipe not in self._counted_pipes_for_scores:
-                    self._counted_pipes_for_scores.append(pipe)
-
-                    # Экспоненциальное увеличение скорости движения труб и начисления очков:
-                    if self._pipes.index(pipe) % 2 == 0 and self._pipes.index(pipe) != 0:
-                        self._configs.pipe_speed *= self._configs.pipe_speed_multiplier
-                        self._configs.background_speed = \
-                            self._configs.pipe_speed // self._configs.background_speed_multiplier
-                        self._configs.scores_multiplier += 1
-
-                    self._configs.scores += self._configs.scores_base_points * self._configs.scores_multiplier
-                    self._check_record()
+            self._play_state_algorithm(pressed)
 
         elif self._configs.state == 'fall':
-            self._configs.lives -= 1
-            self._configs.reset_pipes_gate_pos()
-            if self._configs.lives <= 0:
-                self._configs.state = 'game_over'
-                self._timer = self._configs.game_over_time
-            else:
-                self._configs.state = 'start'
-                self._configs.reset_bird_speed_and_acceleration()
+            self._fall_state_algorithm()
 
         elif self._configs.state == 'game_over':
-            self._move_bird()
-            if self._timer == 0:
-                self._configs.state = 'start'
-                self._game_started = False
-                self._pipes.clear()
-                self._configs.reset_bird_start_position(self._bird)
-                self._configs.reset_pipes_and_background_speed()
-                self._configs.reset_lives_and_scores()
-                self._configs.reset_bird_speed_and_acceleration()
+            self._game_over_state_algorithm()
 
     def _check_record(self):
         if self._configs.scores > self._record:
@@ -216,15 +254,17 @@ class FlappyBirdGame:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self._game_active = False
+                self._configs.reset_configs_after_exit()
+
+        if event.type == pygame.QUIT:
+            self._game_active = False
+            self._configs.reset_configs_after_exit()
 
     def _check_events(self):
         """Метод проверяет события, влияющие на игру. Также метод обновляет таймер, относящийся к задержке перед началом
         игры или после смерти."""
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self._game_active = False
-
             self._check_exit(event)
 
         if not self._game_started:
@@ -238,31 +278,37 @@ class FlappyBirdGame:
             крыльев, иначе слишком быстрая анимация"""
             self._frame = (self._frame + 1 / (self._configs.FPS / 15)) % 4
 
-            # Движение фона:
-            for i in range(len(self._backgrounds) - 1, -1, -1):
-                background = self._backgrounds[i]
-                background.x -= self._configs.background_speed
-
-                if background.right < 0:
-                    self._backgrounds.remove(background)
-
-                """Добавление картинок на фон так, чтобы весь экран был покрыт фоном."""
-                if self._backgrounds[len(self._backgrounds) - 1].right <= self._configs.screen_width:
-                    self._backgrounds.append(pygame.Rect(self._backgrounds[len(self._backgrounds) - 1].right, 0,
-                                                         self._background_image_width, self._background_image_height))
-
-            # Движение труб с конца по индексу в списке труб:
-            for i in range(len(self._pipes) - 1, -1, -1):
-                pipe = self._pipes[i]
-                pipe.x -= self._configs.pipe_speed
-
-                if pipe.right < 0:
-                    self._pipes.remove(pipe)
-
-                    if pipe in self._counted_pipes_for_scores:
-                        self._counted_pipes_for_scores.remove(pipe)
-
+            self._move_background()
+            self._move_pipes()
             self._check_fly()
+
+    def _move_background(self):
+        """Данный метод двигает фон так, чтобы весь экран был покрыт изображением фона."""
+
+        for i in range(len(self._backgrounds) - 1, -1, -1):
+            background = self._backgrounds[i]
+            background.x -= self._configs.background_speed
+
+            if background.right < 0:
+                self._backgrounds.remove(background)
+
+            # Добавление картинок на фон так, чтобы весь экран был покрыт фоном.
+            if self._backgrounds[len(self._backgrounds) - 1].right <= self._configs.screen_width:
+                self._backgrounds.append(pygame.Rect(self._backgrounds[len(self._backgrounds) - 1].right, 0,
+                                                     self._background_image_width, self._background_image_height))
+
+    def _move_pipes(self):
+        """Данный метод выполняет движение труб на экране. Движение труб происходит с конца по индексу в списке труб:"""
+
+        for i in range(len(self._pipes) - 1, -1, -1):
+            pipe = self._pipes[i]
+            pipe.x -= self._configs.pipe_speed
+
+            if pipe.right < 0:
+                self._pipes.remove(pipe)
+
+                if pipe in self._counted_pipes_for_scores:
+                    self._counted_pipes_for_scores.remove(pipe)
 
     def _move_bird(self):
         """Метод изменяет положение птицы, создавая эффект падения/гравитации.
@@ -291,14 +337,7 @@ class FlappyBirdGame:
                                                pygame.Color(self._configs.record_color))
         self._screen.blit(record_text, (self._configs.record_X_position, self._configs.record_Y_position))
 
-    def _update(self):
-        """Метод обновляет экран и объекты, которые должны быть отрисованы на нем."""
-
-        # Отрисовка фона:
-        for background in self._backgrounds:
-            self._screen.blit(self._background_image, background)
-
-        # Отрисовка труб:
+    def _draw_pipes(self):
         for pipe in self._pipes:
             if pipe.y == 0:
                 pipe_image = self._top_pipe.get_rect(bottomleft=pipe.bottomleft)
@@ -306,6 +345,16 @@ class FlappyBirdGame:
             else:
                 pipe_image = self._bottom_pipe.get_rect(topleft=pipe.topleft)
                 self._screen.blit(self._bottom_pipe, pipe_image)
+
+    def _draw_background(self):
+        for background in self._backgrounds:
+            self._screen.blit(self._background_image, background)
+
+    def _update(self):
+        """Метод обновляет экран и объекты, которые должны быть отрисованы на нем."""
+
+        self._draw_background()
+        self._draw_pipes()
 
         """Делим большое изображение 4 фреймов птицы так, чтобы получить одно маленькое. Также создаем вращение 
         изображения, когда птица летит вверх или падает вниз."""
@@ -330,7 +379,7 @@ class FlappyBirdGame:
     def main(self):
 
         """Необходимо добавить первый рисунок фона в список фоновых рисунков, чтобы не было ошибки с индексированием в
-                рамках движения фона в методе _check_events"""
+        рамках движения фона в методе _check_events"""
         self._backgrounds.append(pygame.Rect(0, 0, self._background_image_width,
                                              self._background_image_height))
         while self._game_active:
