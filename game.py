@@ -9,19 +9,20 @@ from configs import Configs
 
 class FlappyBirdGame:
 
-    def __init__(self):
+    def __init__(self, configs):
         pygame.init()
 
-        self._configs = Configs()
+        self._configs = configs
 
         # Screen:
         self._screen = pygame.display.set_mode((self._configs.screen_width, self._configs.screen_height))
         pygame.display.set_caption('Flappy Bird')
-        pygame.display.set_icon(pygame.image.load('images/favicon.ico'))
+        pygame.display.set_icon(pygame.image.load(self._configs.path_to_icon_picture))
 
         # Background:
         self._background_image = pygame.image.load(
-            self._change_picture_size('images/background-day.png', necessary_height=self._configs.screen_height))
+            self._change_picture_size(self._configs.path_to_background_picture,
+                                      necessary_height=self._configs.screen_height))
         self._background_image_width = self._background_image.get_width()
         self._background_image_height = self._background_image.get_height()
         self._backgrounds = []
@@ -33,14 +34,14 @@ class FlappyBirdGame:
 
         # Bird:
         self._bird = pygame.Rect(self._configs.bird_X_start_position, self._configs.bird_Y_start_position, 34, 24)
-        self._bird_image = pygame.image.load('images/new_yellow.png')
+        self._bird_image = pygame.image.load(self._configs.path_to_bird_picture)
         self._frame = 0
 
         # Lives:
         self._lives = pygame.Rect(self._configs.lives_X_position, self._configs.lives_Y_position, 24, 34)
         self._lives_bird_rect = pygame.Rect(self._configs.lives_bird_X_position, self._configs.lives_bird_Y_position,
                                             34, 24)
-        self._lives_bird_image = pygame.image.load('images/yellow_bird.png')
+        self._lives_bird_image = pygame.image.load(self._configs.path_to_lives_bird_picture)
         self._lives_image = None
 
         # Scores:
@@ -51,7 +52,7 @@ class FlappyBirdGame:
                                                self._configs.start_message_Y_position,
                                                self._configs.start_message_image_width,
                                                self._configs.start_message_image_height)
-        self._start_message_image = pygame.image.load('images/start_message.png')
+        self._start_message_image = pygame.image.load(self._configs.path_to_start_message_picture)
         self._game_started = False
 
         # Game over:
@@ -59,7 +60,7 @@ class FlappyBirdGame:
                                                    self._configs.game_over_message_Y_position,
                                                    self._configs.game_over_message_image_width,
                                                    self._configs.game_over_message_image_height)
-        self._game_over_message_image = pygame.image.load('images/gameover.png')
+        self._game_over_message_image = pygame.image.load(self._configs.path_to_game_over_message_picture)
 
         # Record:
         if os.path.exists('record.txt'):
@@ -75,15 +76,15 @@ class FlappyBirdGame:
         self._clock = pygame.time.Clock()
 
         # Music:
-        pygame.mixer.music.load('audio/main_theme.mp3')
+        pygame.mixer.music.load(self._configs.path_to_music)
         pygame.mixer.music.set_volume(self._configs.main_theme_volume)
         pygame.mixer.music.play(-1)  # -1, чтобы музыка играла бесконечно.
 
         # Sounds:
-        self._fall_sound = pygame.mixer.Sound('audio/swoosh.ogg')
-        self._game_over_sound = pygame.mixer.Sound('audio/die.ogg')
-        self._hit_pipes_sounds = pygame.mixer.Sound('audio/hit.ogg')
-        self._fly_sound = pygame.mixer.Sound('audio/wing.ogg')
+        self._fall_sound = pygame.mixer.Sound(self._configs.path_to_fall_sound)
+        self._game_over_sound = pygame.mixer.Sound(self._configs.path_to_game_over_sound)
+        self._hit_pipes_sounds = pygame.mixer.Sound(self._configs.path_to_hit_sound)
+        self._fly_sound = pygame.mixer.Sound(self._configs.path_to_fly_sound)
 
     @staticmethod
     def _change_picture_size(path_to_picture, necessary_width=None, necessary_height=None):
@@ -109,14 +110,14 @@ class FlappyBirdGame:
         длины прохода между трубами больше, чем длина трубы, то изменяем длину труб, чтобы они красиво выглядели на
         экране и не было пробелов между краем экрана и началом картинки трубы."""
 
-        self._top_pipe = pygame.image.load('images/rotated_green_pipe.png')
-        self._bottom_pipe = pygame.image.load('images/pipe-green.png')
+        self._top_pipe = pygame.image.load(self._configs.path_to_top_pipe_picture)
+        self._bottom_pipe = pygame.image.load(self._configs.path_to_bottom_pipe_picture)
         pipe_height = self._top_pipe.get_height()
         if pipe_height - self._configs.pipes_gate_size < self._configs.screen_height:
             necessary_height = self._configs.screen_height - self._configs.pipes_gate_size
-            self._top_pipe = pygame.image.load(self._change_picture_size('images/rotated_green_pipe.png',
+            self._top_pipe = pygame.image.load(self._change_picture_size(self._configs.path_to_top_pipe_picture,
                                                                          necessary_height=necessary_height))
-            self._bottom_pipe = pygame.image.load(self._change_picture_size('images/pipe-green.png',
+            self._bottom_pipe = pygame.image.load(self._change_picture_size(self._configs.path_to_bottom_pipe_picture,
                                                                             necessary_height=necessary_height))
 
     def _create_pipes(self):
@@ -399,8 +400,3 @@ class FlappyBirdGame:
         # Сохраняем рекорд в файл:
         with open('record.txt', 'w') as record_file:
             record_file.write(str(self._record))
-
-
-if __name__ == '__main__':
-    game = FlappyBirdGame()
-    game.main()
