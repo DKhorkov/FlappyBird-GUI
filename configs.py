@@ -144,6 +144,8 @@ class Configs(ConfigsStorage):
         # Сохраняем кол-во изначальных жизней птицы для корректного обновления при конце игры:
         self.lives_to_reset = lives
 
+        self._update_difficulty_sensitive_configs(self._game_difficulties_dict[difficulty_index])
+
         self.lives = lives
         self.path_to_bird_picture = f'images/new_{self._bird_colors_dict[bird_color_index]}.png'
         self.path_to_lives_bird_picture = f'images/{self._bird_colors_dict[bird_color_index]}_bird.png'
@@ -164,6 +166,22 @@ class Configs(ConfigsStorage):
         self.start_message_Y_position = self.screen_height / 2 - self.start_message_image_height / 2
         self.game_over_message_X_position = self.screen_width / 2 - self.game_over_message_image_width / 2
         self.game_over_message_Y_position = self.screen_height / 2 - self.game_over_message_image_height / 2
+        self.record_X_position = self.screen_width / 2 - 100
+
+    def _update_difficulty_sensitive_configs(self, difficulty):
+        if difficulty == 'easy':
+            pass
+        elif difficulty == 'medium':
+            for i in range(10):
+                self.pipe_speed *= self.pipe_speed_multiplier
+                if i % 2 == 0 and i != 0:
+                    self.scores_multiplier += 1
+            self.background_speed = self.pipe_speed // self.background_speed_multiplier
+        elif difficulty == 'hard':
+            for i in range(20):
+                self.pipe_speed *= self.pipe_speed_multiplier
+                if i % 4 == 0 and i != 0:
+                    self.scores_multiplier += 1
 
     def reset_bird_speed_and_acceleration(self):
         self.bird_acceleration = ConfigsStorage.bird_acceleration
