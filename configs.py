@@ -13,6 +13,7 @@ class ConfigsStorage:
     # Bird configs:
     bird_speed: int = 0
     bird_acceleration: int = 0
+    bird_acceleration_factor: int = 2
     bird_Y_start_position: int = screen_height // 2
     bird_X_start_position: int = screen_width // 3
 
@@ -25,7 +26,7 @@ class ConfigsStorage:
     distance_between_pipes: int = pipe_distance_from_screen_border * 3
     pipe_speed_multiplier: float = 1.025
     pipes_gate_size: int = screen_height // 4
-    pipes_gate_pos = int = screen_height // 2
+    pipes_gate_pos: int = screen_height // 2
 
     # Lives configs:
     lives: int = 3
@@ -131,7 +132,10 @@ class Configs(ConfigsStorage):
     def __init__(self):
         super(ConfigsStorage)
 
-        self.lives_to_reset = None
+        self.lives_to_reset = ConfigsStorage.lives
+        self.pipes_speed_to_reset = ConfigsStorage.pipe_speed
+        self.scores_multiplier_to_reset = ConfigsStorage.scores_multiplier
+        self.background_speed_to_reset = ConfigsStorage.background_speed
         self._screen_resolutions_dict = {1: (1920, 1080), 2: (1600, 900), 3: (1536, 864), 4: (1440, 900),
                                          5: (1366, 768), 6: (1280, 720)}
         self._bird_colors_dict = {1: 'yellow', 2: 'red', 3: 'blue'}
@@ -144,8 +148,6 @@ class Configs(ConfigsStorage):
         # Сохраняем кол-во изначальных жизней птицы для корректного обновления при конце игры:
         self.lives_to_reset = lives
 
-        self._update_difficulty_sensitive_configs(self._game_difficulties_dict[difficulty_index])
-
         self.lives = lives
         self.path_to_bird_picture = f'images/new_{self._bird_colors_dict[bird_color_index]}.png'
         self.path_to_lives_bird_picture = f'images/{self._bird_colors_dict[bird_color_index]}_bird.png'
@@ -154,9 +156,12 @@ class Configs(ConfigsStorage):
         self.screen_width = self._screen_resolutions_dict[screen_resolution_index][0]
         self.screen_height = self._screen_resolutions_dict[screen_resolution_index][1]
 
+        self._update_difficulty_sensitive_configs(self._game_difficulties_dict[difficulty_index])
+
         # Связанные с разрешением экрана конфиги, которые тоже необходимо обновить:
         self.bird_Y_start_position = self.screen_height // 2
         self.bird_X_start_position = self.screen_width // 3
+        self.bird_acceleration_factor = self.screen_height * 4 // 1000
         self.pipe_start_width = self.screen_width - self.pipe_distance_from_screen_border
         self.pipes_gate_size = self.screen_height // 4
         self.pipes_gate_pos = self.screen_height // 2
@@ -172,16 +177,20 @@ class Configs(ConfigsStorage):
         if difficulty == 'easy':
             pass
         elif difficulty == 'medium':
-            for i in range(10):
-                self.pipe_speed *= self.pipe_speed_multiplier
-                if i % 2 == 0 and i != 0:
-                    self.scores_multiplier += 1
-            self.background_speed = self.pipe_speed // self.background_speed_multiplier
-        elif difficulty == 'hard':
-            for i in range(20):
+            for i in range(self.screen_width // 90):
                 self.pipe_speed *= self.pipe_speed_multiplier
                 if i % 4 == 0 and i != 0:
                     self.scores_multiplier += 1
+        elif difficulty == 'hard':
+            for i in range(self.screen_width // 40):
+                self.pipe_speed *= self.pipe_speed_multiplier
+                if i % 8 == 0 and i != 0:
+                    self.scores_multiplier += 1
+        self.background_speed = self.pipe_speed // self.background_speed_multiplier
+        self.pipes_speed_to_reset = self.pipe_speed  # Скорость труб и мультипликатор очков по аналогии с жизнями
+        self.pipe_speed_multiplier = 1 + (self.screen_width / 1000) / 100  # Уравнивание разниц в разрешении экрана
+        self.scores_multiplier_to_reset = self.scores_multiplier
+        self.background_speed_to_reset = self.background_speed
 
     def reset_bird_speed_and_acceleration(self):
         self.bird_acceleration = ConfigsStorage.bird_acceleration
@@ -197,11 +206,11 @@ class Configs(ConfigsStorage):
     def reset_lives_and_scores(self):
         self.lives = self.lives_to_reset
         self.scores = ConfigsStorage.scores
-        self.scores_multiplier = ConfigsStorage.scores_multiplier
+        self.scores_multiplier = self.scores_multiplier_to_reset
 
     def reset_pipes_and_background_speed(self):
-        self.pipe_speed = ConfigsStorage.pipe_speed
-        self.background_speed = ConfigsStorage.background_speed
+        self.pipe_speed = self.pipes_speed_to_reset
+        self.background_speed = self.background_speed_to_reset
 
     def reset_pipes_gate_pos(self):
         self.pipes_gate_pos = ConfigsStorage.pipes_gate_pos

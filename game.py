@@ -4,8 +4,6 @@ import os
 import shutil
 import random
 
-from configs import Configs
-
 
 class FlappyBirdGame:
 
@@ -176,7 +174,7 @@ class FlappyBirdGame:
 
     def _play_state_algorithm(self, pressed):
         if pressed:
-            self._configs.bird_acceleration -= 2
+            self._configs.bird_acceleration -= self._configs.bird_acceleration_factor
             if self._configs.fly_sound_timer == 0:
                 self._fly_sound.play()
                 self._configs.fly_sound_timer = 2
