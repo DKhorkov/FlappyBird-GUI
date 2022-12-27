@@ -4,7 +4,7 @@ from configs import Configs
 from game import FlappyBirdGame
 
 
-class GUI:
+class PreconditionsGUI:
 
     def __init__(self):
         self._configs = Configs()
@@ -33,8 +33,6 @@ class GUI:
         self._screen_resolution.set(1)
 
         self._entries = []
-
-        self._create_and_place()
 
     def _create_and_place(self):
         self._create_labels()
@@ -345,9 +343,10 @@ class GUI:
             radiobutton.destroy()
 
     def main(self):
+        self._create_and_place()
         self._precondition_window.mainloop()
 
 
 if __name__ == '__main__':
-    gui = GUI()
+    gui = PreconditionsGUI()
     gui.main()

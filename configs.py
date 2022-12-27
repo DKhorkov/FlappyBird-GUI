@@ -87,7 +87,7 @@ class ConfigsStorage:
     path_to_hit_sound: str = 'audio/hit.ogg'
     path_to_fly_sound: str = 'audio/wing.ogg'
 
-    # GUI:
+    # Precondition GUI:
     gui_precondition_screen_width: int = 1200
     gui_precondition_screen_height: int = 800
     gui_precondition_screen_title: str = 'FlappyBird preconditions'
@@ -126,6 +126,34 @@ class ConfigsStorage:
     gui_background_filetypes: tuple[tuple[str]] = (('PNG files', '*.png'), ('All files', '*'))
     gui_music_filetypes: tuple[tuple[str]] = (('MP3 files', '*.mp3'), ('All files', '*'))
 
+    # Main GUI:
+    gui_main_screen_width: int = 900
+    gui_main_screen_height: int = 500
+    gui_main_screen_title: str = 'FlappyBird authentication'
+
+    gui_main_text_font: str = 'Times 20'
+    gui_main_text_color: str = 'black'
+
+    gui_main_label_X_start_position: int = gui_main_screen_width // 4
+    gui_main_label_Y_start_position: int = gui_main_screen_height // 5
+    gui_main_label_Y_distance_from_each_other: int = 60
+
+    gui_main_entry_X_distance_from_label: int = (gui_main_label_X_start_position + 150)
+    gui_main_entry_width: int = 30
+    gui_main_entry_height: int = 40
+    gui_main_entry_border_width: int = 4
+    gui_main_entry_border_mode: str = 'outside'
+
+    gui_main_default_button_Y_distance_from_entry: int = 20
+    gui_main_default_button_Y_distance_from_each_other: int = 10
+    gui_main_default_button_width: int = 20
+    gui_main_default_button_border_width: int = 4
+    gui_main_login_button_background_color: str = 'green'
+    gui_main_register_button_background_color: str = 'yellow'
+
+    # Hash:
+    hash_len: int = 10
+
 
 class Configs(ConfigsStorage):
 
@@ -133,6 +161,7 @@ class Configs(ConfigsStorage):
         super(ConfigsStorage)
 
         self.lives_to_reset = ConfigsStorage.lives
+        self.difficulty_level = 'easy'
         self.pipes_speed_to_reset = ConfigsStorage.pipe_speed
         self.scores_multiplier_to_reset = ConfigsStorage.scores_multiplier
         self.background_speed_to_reset = ConfigsStorage.background_speed
@@ -147,6 +176,7 @@ class Configs(ConfigsStorage):
 
         # Сохраняем кол-во изначальных жизней птицы для корректного обновления при конце игры:
         self.lives_to_reset = lives
+        self.difficulty_level = self._game_difficulties_dict[difficulty_index]
 
         self.lives = lives
         self.path_to_bird_picture = f'images/new_{self._bird_colors_dict[bird_color_index]}.png'
@@ -156,7 +186,7 @@ class Configs(ConfigsStorage):
         self.screen_width = self._screen_resolutions_dict[screen_resolution_index][0]
         self.screen_height = self._screen_resolutions_dict[screen_resolution_index][1]
 
-        self._update_difficulty_sensitive_configs(self._game_difficulties_dict[difficulty_index])
+        self._update_difficulty_sensitive_configs(self.difficulty_level)
 
         # Связанные с разрешением экрана конфиги, которые тоже необходимо обновить:
         self.bird_Y_start_position = self.screen_height // 2
