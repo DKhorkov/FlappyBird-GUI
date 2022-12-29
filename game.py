@@ -7,9 +7,10 @@ import random
 
 class FlappyBirdGame:
 
-    def __init__(self, configs):
+    def __init__(self, configs, database):
         pygame.init()
 
+        self._database = database
         self._configs = configs
 
         # Screen:
@@ -61,11 +62,7 @@ class FlappyBirdGame:
         self._game_over_message_image = pygame.image.load(self._configs.path_to_game_over_message_picture)
 
         # Record:
-        if os.path.exists('record.txt'):
-            with open('record.txt', 'r') as record_file:
-                self._record = int(record_file.read())
-        else:
-            self._record = 0
+        self._record = self._configs.record
         self._record_font = pygame.font.Font(None, self._configs.scores_font_size)
 
         # Other:
@@ -395,6 +392,5 @@ class FlappyBirdGame:
 
         self._clear_temporary_images()
 
-        # Сохраняем рекорд в файл:
-        with open('record.txt', 'w') as record_file:
-            record_file.write(str(self._record))
+        if self._record >= self._configs.record_from_database:
+            self._database.upload_record(self._record)

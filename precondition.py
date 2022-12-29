@@ -1,13 +1,16 @@
 import tkinter
 from tkinter import filedialog
-from configs import Configs
+import pickle
+
 from game import FlappyBirdGame
 
 
 class PreconditionsGUI:
 
-    def __init__(self):
-        self._configs = Configs()
+    def __init__(self, database, configs):
+        self._database = database
+        self._configs = configs
+        self._last_configs = {}
 
         self._precondition_window = tkinter.Tk()
 
@@ -195,67 +198,67 @@ class PreconditionsGUI:
     def _place_difficulty_variants(self):
         self._easy_difficulty.place(x=self._configs.gui_precondition_entry_X_distance_from_label,
                                     y=int(self._difficulty_label.place_info()['y']) +
-                                       self._difficulty_label.winfo_reqheight() // 6)
+                                      self._difficulty_label.winfo_reqheight() // 6)
         self._medium_difficulty.place(x=int(self._easy_difficulty.place_info()['x']) +
-                                         self._easy_difficulty.winfo_reqwidth() +
+                                        self._easy_difficulty.winfo_reqwidth() +
                                         self._configs.gui_precondition_distance_between_radio_buttons,
                                       y=int(self._difficulty_label.place_info()['y']) +
-                                         self._difficulty_label.winfo_reqheight() // 6)
+                                        self._difficulty_label.winfo_reqheight() // 6)
         self._hard_difficulty.place(x=int(self._medium_difficulty.place_info()['x']) +
-                                       self._medium_difficulty.winfo_reqwidth() +
+                                      self._medium_difficulty.winfo_reqwidth() +
                                       self._configs.gui_precondition_distance_between_radio_buttons,
                                     y=int(self._difficulty_label.place_info()['y']) +
-                                       self._difficulty_label.winfo_reqheight() // 6)
+                                      self._difficulty_label.winfo_reqheight() // 6)
 
     def _place_bird_color_variants(self):
         self._yellow_bird.place(x=self._configs.gui_precondition_entry_X_distance_from_label,
                                 y=int(self._bird_color_label.place_info()['y']) +
-                                   self._bird_color_label.winfo_reqheight() // 6)
+                                  self._bird_color_label.winfo_reqheight() // 6)
         self._red_bird.place(x=int(self._yellow_bird.place_info()['x']) +
-                                self._yellow_bird.winfo_reqwidth() +
+                               self._yellow_bird.winfo_reqwidth() +
                                self._configs.gui_precondition_distance_between_radio_buttons,
                              y=int(self._bird_color_label.place_info()['y']) +
-                                self._bird_color_label.winfo_reqheight() // 6)
+                               self._bird_color_label.winfo_reqheight() // 6)
         self._blue_bird.place(x=int(self._red_bird.place_info()['x']) +
-                                 self._red_bird.winfo_reqwidth() +
+                                self._red_bird.winfo_reqwidth() +
                                 self._configs.gui_precondition_distance_between_radio_buttons,
                               y=int(self._bird_color_label.place_info()['y']) +
-                                 self._bird_color_label.winfo_reqheight() // 6)
+                                self._bird_color_label.winfo_reqheight() // 6)
 
     def _place_pipes_color_variants(self):
         self._green_pipes.place(x=self._configs.gui_precondition_entry_X_distance_from_label,
                                 y=int(self._pipes_color_label.place_info()['y']) +
-                                   self._pipes_color_label.winfo_reqheight() // 6)
+                                  self._pipes_color_label.winfo_reqheight() // 6)
         self._red_pipes.place(x=int(self._green_pipes.place_info()['x']) +
-                                 self._green_pipes.winfo_reqwidth() +
+                                self._green_pipes.winfo_reqwidth() +
                                 self._configs.gui_precondition_distance_between_radio_buttons,
                               y=int(self._pipes_color_label.place_info()['y']) +
-                                 self._pipes_color_label.winfo_reqheight() // 6)
+                                self._pipes_color_label.winfo_reqheight() // 6)
 
     def _place_screen_resolution_variants(self):
         self._1920x1080.place(x=self._configs.gui_precondition_entry_X_distance_from_label,
                               y=int(self._screen_resolution_label.place_info()['y']) +
-                                 self._screen_resolution_label.winfo_reqheight() // 6)
+                                self._screen_resolution_label.winfo_reqheight() // 6)
         self._1600x900.place(x=int(self._1920x1080.place_info()['x']) + self._1920x1080.winfo_reqwidth() +
                                self._configs.gui_precondition_distance_between_radio_buttons,
                              y=int(self._screen_resolution_label.place_info()['y']) +
-                                self._screen_resolution_label.winfo_reqheight() // 6)
+                               self._screen_resolution_label.winfo_reqheight() // 6)
         self._1536x864.place(x=int(self._1600x900.place_info()['x']) + self._1600x900.winfo_reqwidth() +
                                self._configs.gui_precondition_distance_between_radio_buttons,
                              y=int(self._screen_resolution_label.place_info()['y']) +
-                                self._screen_resolution_label.winfo_reqheight() // 6)
+                               self._screen_resolution_label.winfo_reqheight() // 6)
         self._1440x900.place(x=int(self._1536x864.place_info()['x']) + self._1536x864.winfo_reqwidth() +
                                self._configs.gui_precondition_distance_between_radio_buttons,
                              y=int(self._screen_resolution_label.place_info()['y']) +
-                                self._screen_resolution_label.winfo_reqheight() // 6)
+                               self._screen_resolution_label.winfo_reqheight() // 6)
         self._1366x768.place(x=int(self._1440x900.place_info()['x']) + self._1440x900.winfo_reqwidth() +
                                self._configs.gui_precondition_distance_between_radio_buttons,
                              y=int(self._screen_resolution_label.place_info()['y']) +
-                                self._screen_resolution_label.winfo_reqheight() // 6)
+                               self._screen_resolution_label.winfo_reqheight() // 6)
         self._1280x720.place(x=int(self._1366x768.place_info()['x']) + self._1366x768.winfo_reqwidth() +
                                self._configs.gui_precondition_distance_between_radio_buttons,
                              y=int(self._screen_resolution_label.place_info()['y']) +
-                                self._screen_resolution_label.winfo_reqheight() // 6)
+                               self._screen_resolution_label.winfo_reqheight() // 6)
 
     def _create_buttons(self):
         self._change_background_picture_button = tkinter.Button(self._precondition_window,
@@ -320,16 +323,47 @@ class PreconditionsGUI:
             self._destroy_labels_entries_radiobuttons_and_buttons()
             self._create_and_place()
 
+    def _fill_last_configs(self, difficulty_index, lives, bird_color_index, pipes_color_index, screen_resolution_index):
+        self._last_configs['difficulty_index'] = difficulty_index
+        self._last_configs['lives'] = lives
+        self._last_configs['bird_color_index'] = bird_color_index
+        self._last_configs['pipes_color_index'] = pipes_color_index
+        self._last_configs['screen_resolution_index'] = screen_resolution_index
+        self._last_configs['path_to_background'] = self._configs.path_to_background_picture
+        self._last_configs['path_to_music'] = self._configs.path_to_music
+
+    def _get_fata_from_gui_fields(self):
+        self._difficulty_index = self._difficulty.get()
+        self._lives = int(self._lives_entry.get())
+        self._bird_color_index = self._bird_color.get()
+        self._pipes_color_index = self._pipes_color.get()
+        self._screen_resolution_index = self._screen_resolution.get()
+
+    def _upload_data_to_database(self):
+        self._database.upload_last_config(pickle.dumps(self._last_configs))
+        self._database.upload_difficulty(self._configs.game_difficulties_dict[self._difficulty_index])
+        screen_resolution = "x".join(str(val) for val in
+                                     self._configs.screen_resolutions_dict[self._screen_resolution_index])
+        self._database.upload_screen_resolution(screen_resolution)
+        self._database.upload_main(self._lives)
+
+    def _check_record(self):
+        record_on_current_configs = self._database.check_record_existence()
+        self._configs.record = record_on_current_configs
+        self._configs.record_from_database = record_on_current_configs
+
     def _play(self):
-        difficulty_index = self._difficulty.get()
-        lives = self._lives_entry.get()
-        bird_color_index = self._bird_color.get()
-        pipes_color_index = self._pipes_color.get()
-        screen_resolution_index = self._screen_resolution.get()
-        self._configs.update_configs_after_gui(difficulty_index, int(lives), bird_color_index, pipes_color_index,
-                                               screen_resolution_index)
+        self._get_fata_from_gui_fields()
+
+        self._fill_last_configs(self._difficulty_index, self._lives, self._bird_color_index,
+                                self._pipes_color_index, self._screen_resolution_index)
+        self._upload_data_to_database()
+        self._check_record()
+
+        self._configs.update_configs_after_gui(self._difficulty_index, self._lives, self._bird_color_index,
+                                               self._pipes_color_index, self._screen_resolution_index)
         self._precondition_window.destroy()
-        flappy_bird_game = FlappyBirdGame(self._configs)
+        flappy_bird_game = FlappyBirdGame(self._configs, self._database)
         flappy_bird_game.main()
 
     def _destroy_labels_entries_radiobuttons_and_buttons(self):
@@ -345,8 +379,3 @@ class PreconditionsGUI:
     def main(self):
         self._create_and_place()
         self._precondition_window.mainloop()
-
-
-if __name__ == '__main__':
-    gui = PreconditionsGUI()
-    gui.main()

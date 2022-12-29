@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 @dataclass
 class ConfigsStorage:
-
     # Screen configs:
     screen_width: int = 1920
     screen_height: int = 1080
@@ -154,6 +153,10 @@ class ConfigsStorage:
     # Hash:
     hash_len: int = 10
 
+    # Record:
+    record: int = 0
+    record_from_database: int = 0
+
 
 class Configs(ConfigsStorage):
 
@@ -165,26 +168,26 @@ class Configs(ConfigsStorage):
         self.pipes_speed_to_reset = ConfigsStorage.pipe_speed
         self.scores_multiplier_to_reset = ConfigsStorage.scores_multiplier
         self.background_speed_to_reset = ConfigsStorage.background_speed
-        self._screen_resolutions_dict = {1: (1920, 1080), 2: (1600, 900), 3: (1536, 864), 4: (1440, 900),
-                                         5: (1366, 768), 6: (1280, 720)}
+        self.screen_resolutions_dict = {1: (1920, 1080), 2: (1600, 900), 3: (1536, 864), 4: (1440, 900),
+                                        5: (1366, 768), 6: (1280, 720)}
         self._bird_colors_dict = {1: 'yellow', 2: 'red', 3: 'blue'}
         self._pipes_colors_dict = {1: 'green', 2: 'red'}
-        self._game_difficulties_dict = {1: 'easy', 2: 'medium', 3: 'hard'}
+        self.game_difficulties_dict = {1: 'easy', 2: 'medium', 3: 'hard'}
 
     def update_configs_after_gui(self, difficulty_index: int, lives: int, bird_color_index: int, pipes_color_index: int,
                                  screen_resolution_index: int):
 
         # Сохраняем кол-во изначальных жизней птицы для корректного обновления при конце игры:
         self.lives_to_reset = lives
-        self.difficulty_level = self._game_difficulties_dict[difficulty_index]
+        self.difficulty_level = self.game_difficulties_dict[difficulty_index]
 
         self.lives = lives
         self.path_to_bird_picture = f'images/new_{self._bird_colors_dict[bird_color_index]}.png'
         self.path_to_lives_bird_picture = f'images/{self._bird_colors_dict[bird_color_index]}_bird.png'
         self.path_to_top_pipe_picture = f'images/rotated_{self._pipes_colors_dict[pipes_color_index]}_pipe.png'
         self.path_to_bottom_pipe_picture = f'images/pipe-{self._pipes_colors_dict[pipes_color_index]}.png'
-        self.screen_width = self._screen_resolutions_dict[screen_resolution_index][0]
-        self.screen_height = self._screen_resolutions_dict[screen_resolution_index][1]
+        self.screen_width = self.screen_resolutions_dict[screen_resolution_index][0]
+        self.screen_height = self.screen_resolutions_dict[screen_resolution_index][1]
 
         self._update_difficulty_sensitive_configs(self.difficulty_level)
 

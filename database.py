@@ -112,9 +112,9 @@ class DataBase:
             self.__cursor.execute('''SELECT record FROM records WHERE main_id=?''',
                                   (self._main_id,))
             record = self.__cursor.fetchone()[0]
-            return True, record
+            return record
         else:
-            return False, 0
+            return 0
 
     def upload_record(self, record):
         self.__cursor.execute('''SELECT EXISTS (SELECT id FROM records WHERE main_id=?)''',

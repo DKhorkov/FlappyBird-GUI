@@ -90,20 +90,47 @@ class MainGUI:
                                       self._login_button.winfo_reqheight() +
                                       self._configs.gui_main_default_button_Y_distance_from_each_other)
 
-    def _login(self):
+    def _get_username_and_hashed_password(self):
         entered_username = self._username_entry.get()
         entered_password = self._password_entry.get()
         self._clear_entries()
         hashed_password = blake2b(entered_password.encode(), digest_size=self._configs.hash_len).hexdigest()
-        user_exists, valid_password = self._database.check_user_existence(username=entered_username,
-                                                                          password=hashed_password)
+        return entered_username, hashed_password
+
+    @staticmethod
+    def _parse_last_configs_for_user(last_configs):
+        parsed_configs_list = []
+        for key, value in last_configs.items():
+            line = f'{key}: {value}'
+            parsed_configs_list.append(line)
+        parsed_configs = '\n\n'.join(parsed_configs_list)
+        return parsed_configs
+
+    def _upload_data_to_database(self, difficulty_index, screen_resolution_index, lives):
+        self._database.upload_difficulty(self._configs.game_difficulties_dict[difficulty_index])
+        screen_resolution = "x".join(str(val) for val in self._configs.screen_resolutions_dict[screen_resolution_index])
+        self._database.upload_screen_resolution(screen_resolution)
+        self._database.upload_main(lives)
+
+    def _check_record(self):
+        record_on_current_configs = self._database.check_record_existence()
+        self._configs.record = record_on_current_configs
+        self._configs.record_from_database = record_on_current_configs
+
+    def _login(self):
+        user_exists, valid_password = self._database.check_user_existence(*self._get_username_and_hashed_password())
         if user_exists and valid_password:
             last_config_exists, last_configs = self._database.check_configs_existence()
             if last_config_exists:
                 unpacked_configs = pickle.loads(last_configs)
+                parsed_configs = self._parse_last_configs_for_user(unpacked_configs)
                 use_last_configs = msg.askquestion(title='Configs', message=f'Do you want to use configs from last '
-                                                                            f'game?\n\n {unpacked_configs}')
+                                                                            f'game?\n\n\n\n{parsed_configs}')
                 if use_last_configs == 'yes':
+                    self._upload_data_to_database(unpacked_configs['difficulty_index'],
+                                                  unpacked_configs['screen_resolution_index'],
+                                                  unpacked_configs['lives'])
+                    self._check_record()
                     self._configs.update_configs_after_gui(unpacked_configs['difficulty_index'],
                                                            unpacked_configs['lives'],
                                                            unpacked_configs['bird_color_index'],
@@ -116,30 +143,40 @@ class MainGUI:
                         if os.path.exists(unpacked_configs['path_to_music']):
                             self._configs.path_to_music = unpacked_configs['path_to_music']
                     self._main_window.destroy()
-                    flappy_bird_game = FlappyBirdGame(self._configs)
+                    flappy_bird_game = FlappyBirdGame(self._configs, self._database)
                     flappy_bird_game.main()
                 else:
                     self._main_window.destroy()
-                    precondition = PreconditionsGUI()
+                    precondition = PreconditionsGUI(self._database, self._configs)
                     precondition.main()
             else:
                 self._main_window.destroy()
-                precondition = PreconditionsGUI()
+                precondition = PreconditionsGUI(self._database, self._configs)
                 precondition.main()
 
         elif user_exists and not valid_password:
             self._clear_entries()
-            msg.showerror(title='Authentication error', message="Invalid password! Entered password doesn't match the "
-                                                                "password, which was entered during registration! "
-                                                                "Please, try again!")
+            msg.showerror(title='Login error', message="Invalid password! Entered password doesn't match the password, "
+                                                       "which was entered during registration! Please, try again!")
         elif not user_exists:
             self._clear_entries()
-            msg.showerror(title='Authentication error', message="User doesn't exist! There is no user with such "
-                                                                "username! Please, use another username or register a "
-                                                                "new one!")
+            msg.showerror(title='Login error', message="User doesn't exist! There is no user with such username! "
+                                                       "Please, use another username or register a new one!")
 
     def _register(self):
-        pass
+        username, password = self._get_username_and_hashed_password()
+        user_exists, _ = self._database.check_user_existence(username, password)
+        if user_exists:
+            msg.showerror(title='Registration error', message="User already exists! Please login or use another "
+                                                              "username to register!")
+        else:
+            self._database.upload_users(username, password)
+            cont_event = msg.showinfo(title='Registration complete',
+                                      message='You have been successfully registered!')
+            if cont_event == 'ok':
+                self._main_window.destroy()
+                precondition = PreconditionsGUI(self._database, self._configs)
+                precondition.main()
 
     def _clear_entries(self):
         self._username_entry.delete(0, END)
