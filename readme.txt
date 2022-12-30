@@ -5,7 +5,7 @@ user's data is saves (last configs and record).
 
 For creating executable file, use next command in head directory:
 pyinstaller --onefile --windowed --icon=images/favicon.ico -n FlappyBird
---distpath <Destination, where exe file would be> GUI.py
+--distpath <Destination, where exe file would be> main.py
 
 
 Executable file need to be put in head directory to all other
