@@ -97,10 +97,19 @@ class MainGUI:
         hashed_password = blake2b(entered_password.encode(), digest_size=self._configs.hash_len).hexdigest()
         return entered_username, hashed_password
 
-    @staticmethod
-    def _parse_last_configs_for_user(last_configs):
+    def _parse_last_configs_for_user(self, last_configs):
+        dict_to_parse = {
+            'Difficulty': self._configs.game_difficulties_dict[last_configs['difficulty_index']],
+            'Lives': last_configs['lives'],
+            'Bird color': self._configs.bird_colors_dict[last_configs['bird_color_index']],
+            'Pipes color': self._configs.pipes_colors_dict[last_configs['pipes_color_index']],
+            'Screen resolution': f"{self._configs.screen_resolutions_dict[last_configs['screen_resolution_index']][0]}x"
+                                 f"{self._configs.screen_resolutions_dict[last_configs['screen_resolution_index']][1]}",
+            'Path to background picture': last_configs['path_to_background'],
+            'Path to music': last_configs['path_to_music'],
+        }
         parsed_configs_list = []
-        for key, value in last_configs.items():
+        for key, value in dict_to_parse.items():
             line = f'{key}: {value}'
             parsed_configs_list.append(line)
         parsed_configs = '\n\n'.join(parsed_configs_list)
@@ -117,42 +126,49 @@ class MainGUI:
         self._configs.record = record_on_current_configs
         self._configs.record_from_database = record_on_current_configs
 
+    def _whether_to_use_last_configs_or_not(self, use_last_configs, unpacked_configs):
+        if use_last_configs == 'yes':
+            self._upload_data_to_database(unpacked_configs['difficulty_index'],
+                                          unpacked_configs['screen_resolution_index'],
+                                          unpacked_configs['lives'])
+            self._check_record()
+            self._configs.update_configs_after_gui(unpacked_configs['difficulty_index'],
+                                                   unpacked_configs['lives'],
+                                                   unpacked_configs['bird_color_index'],
+                                                   unpacked_configs['pipes_color_index'],
+                                                   unpacked_configs['screen_resolution_index'])
+            if unpacked_configs['path_to_background'] != self._configs.path_to_background_picture:
+                if os.path.exists(unpacked_configs['path_to_background']):
+                    self._configs.path_to_background_picture = unpacked_configs['path_to_background']
+            if unpacked_configs['path_to_music'] != self._configs.path_to_music:
+                if os.path.exists(unpacked_configs['path_to_music']):
+                    self._configs.path_to_music = unpacked_configs['path_to_music']
+            self._main_window.destroy()
+            flappy_bird_game = FlappyBirdGame(self._configs, self._database)
+            flappy_bird_game.main()
+        else:
+            self._main_window.destroy()
+            precondition = PreconditionsGUI(self._database, self._configs)
+            precondition.main()
+
+    def _check_last_configs_existence(self):
+        last_config_exists, last_configs = self._database.check_configs_existence()
+        if last_config_exists:
+            unpacked_configs = pickle.loads(last_configs)
+            parsed_configs = self._parse_last_configs_for_user(unpacked_configs)
+            use_last_configs = msg.askquestion(title='Configs', message=f'Do you want to use configs from last '
+                                                                        f'game?\n\n\n\n{parsed_configs}')
+            self._whether_to_use_last_configs_or_not(use_last_configs, unpacked_configs)
+
+        else:
+            self._main_window.destroy()
+            precondition = PreconditionsGUI(self._database, self._configs)
+            precondition.main()
+
     def _login(self):
         user_exists, valid_password = self._database.check_user_existence(*self._get_username_and_hashed_password())
         if user_exists and valid_password:
-            last_config_exists, last_configs = self._database.check_configs_existence()
-            if last_config_exists:
-                unpacked_configs = pickle.loads(last_configs)
-                parsed_configs = self._parse_last_configs_for_user(unpacked_configs)
-                use_last_configs = msg.askquestion(title='Configs', message=f'Do you want to use configs from last '
-                                                                            f'game?\n\n\n\n{parsed_configs}')
-                if use_last_configs == 'yes':
-                    self._upload_data_to_database(unpacked_configs['difficulty_index'],
-                                                  unpacked_configs['screen_resolution_index'],
-                                                  unpacked_configs['lives'])
-                    self._check_record()
-                    self._configs.update_configs_after_gui(unpacked_configs['difficulty_index'],
-                                                           unpacked_configs['lives'],
-                                                           unpacked_configs['bird_color_index'],
-                                                           unpacked_configs['pipes_color_index'],
-                                                           unpacked_configs['screen_resolution_index'])
-                    if unpacked_configs['path_to_background'] != self._configs.path_to_background_picture:
-                        if os.path.exists(unpacked_configs['path_to_background']):
-                            self._configs.path_to_background_picture = unpacked_configs['path_to_background']
-                    if unpacked_configs['path_to_music'] != self._configs.path_to_music:
-                        if os.path.exists(unpacked_configs['path_to_music']):
-                            self._configs.path_to_music = unpacked_configs['path_to_music']
-                    self._main_window.destroy()
-                    flappy_bird_game = FlappyBirdGame(self._configs, self._database)
-                    flappy_bird_game.main()
-                else:
-                    self._main_window.destroy()
-                    precondition = PreconditionsGUI(self._database, self._configs)
-                    precondition.main()
-            else:
-                self._main_window.destroy()
-                precondition = PreconditionsGUI(self._database, self._configs)
-                precondition.main()
+            self._check_last_configs_existence()
 
         elif user_exists and not valid_password:
             self._clear_entries()

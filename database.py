@@ -19,7 +19,7 @@ class DataBase:
         self.__cursor = self.__connection.cursor()
         self.__create_tables_if_not_exists()
 
-    def _close_connection(self):
+    def close_connection(self):
         self.__cursor.close()
         self.__connection.close()
 
@@ -153,30 +153,3 @@ class DataBase:
             self.__cursor.execute('''UPDATE last_configs SET configs=? WHERE user_id=?''',
                                   (configs, self._user_id))
             self.__connection.commit()
-
-
-if __name__ == '__main__':
-    u = 'demos'
-    p = hashlib.sha512()
-    p.update(u.encode())
-    p_o = p.hexdigest()
-    u2 = 'tester'
-    p2 = hashlib.sha512()
-    p2.update(u2.encode())
-    p_o2 = p2.hexdigest()
-    difficulty = 'medium'
-    resolution = '1920x1080'
-    db = DataBase()
-    db.check_user_existence(u, p_o)
-    db.upload_users(u, p_o)
-    db.upload_difficulty(difficulty)
-    db.upload_screen_resolution(resolution)
-    db.upload_main(2)
-    db.check_record_existence()
-    db.upload_record(1000)
-
-    configs = pickle.dumps('some configs')
-    db.upload_last_config(configs)
-    result = db.check_configs_existence()
-    conf_after_db = pickle.loads(result[1])
-    print(conf_after_db)

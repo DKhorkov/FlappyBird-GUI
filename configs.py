@@ -170,8 +170,8 @@ class Configs(ConfigsStorage):
         self.background_speed_to_reset = ConfigsStorage.background_speed
         self.screen_resolutions_dict = {1: (1920, 1080), 2: (1600, 900), 3: (1536, 864), 4: (1440, 900),
                                         5: (1366, 768), 6: (1280, 720)}
-        self._bird_colors_dict = {1: 'yellow', 2: 'red', 3: 'blue'}
-        self._pipes_colors_dict = {1: 'green', 2: 'red'}
+        self.bird_colors_dict = {1: 'yellow', 2: 'red', 3: 'blue'}
+        self.pipes_colors_dict = {1: 'green', 2: 'red'}
         self.game_difficulties_dict = {1: 'easy', 2: 'medium', 3: 'hard'}
 
     def update_configs_after_gui(self, difficulty_index: int, lives: int, bird_color_index: int, pipes_color_index: int,
@@ -182,10 +182,10 @@ class Configs(ConfigsStorage):
         self.difficulty_level = self.game_difficulties_dict[difficulty_index]
 
         self.lives = lives
-        self.path_to_bird_picture = f'images/new_{self._bird_colors_dict[bird_color_index]}.png'
-        self.path_to_lives_bird_picture = f'images/{self._bird_colors_dict[bird_color_index]}_bird.png'
-        self.path_to_top_pipe_picture = f'images/rotated_{self._pipes_colors_dict[pipes_color_index]}_pipe.png'
-        self.path_to_bottom_pipe_picture = f'images/pipe-{self._pipes_colors_dict[pipes_color_index]}.png'
+        self.path_to_bird_picture = f'images/new_{self.bird_colors_dict[bird_color_index]}.png'
+        self.path_to_lives_bird_picture = f'images/{self.bird_colors_dict[bird_color_index]}_bird.png'
+        self.path_to_top_pipe_picture = f'images/rotated_{self.pipes_colors_dict[pipes_color_index]}_pipe.png'
+        self.path_to_bottom_pipe_picture = f'images/pipe-{self.pipes_colors_dict[pipes_color_index]}.png'
         self.screen_width = self.screen_resolutions_dict[screen_resolution_index][0]
         self.screen_height = self.screen_resolutions_dict[screen_resolution_index][1]
 

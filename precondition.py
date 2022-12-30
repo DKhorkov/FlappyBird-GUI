@@ -25,7 +25,6 @@ class PreconditionsGUI:
         self._precondition_window.geometry(f'{self._configs.gui_precondition_screen_width}x'
                                            f'{self._configs.gui_precondition_screen_height}')
 
-        self._radio_buttons = []
         self._difficulty = tkinter.IntVar()
         self._difficulty.set(1)
         self._bird_color = tkinter.IntVar()
@@ -35,13 +34,15 @@ class PreconditionsGUI:
         self._screen_resolution = tkinter.IntVar()
         self._screen_resolution.set(1)
 
-        self._entries = []
-
-    def _create_and_place(self):
+    def _create_and_place_labels(self):
         self._create_labels()
         self._place_labels()
+
+    def _create_and_place_entries(self):
         self._create_entries()
         self._place_entries()
+
+    def _create_and_place_buttons(self):
         self._create_buttons()
         self._place_buttons()
 
@@ -111,7 +112,6 @@ class PreconditionsGUI:
                                           from_=self._configs.gui_precondition_lives_minimum,
                                           to=self._configs.gui_precondition_lives_maximum,
                                           orient=tkinter.HORIZONTAL)
-        self._entries.append(self._lives_entry)
 
         self._create_difficulty_variants()
         self._create_bird_color_variants()
@@ -128,9 +128,6 @@ class PreconditionsGUI:
         self._hard_difficulty = tkinter.Radiobutton(self._precondition_window, text='Hard',
                                                     variable=self._difficulty, value=3,
                                                     font=self._configs.gui_precondition_radio_buttons_font)
-        self._radio_buttons.append(self._easy_difficulty)
-        self._radio_buttons.append(self._medium_difficulty)
-        self._radio_buttons.append(self._hard_difficulty)
 
     def _create_bird_color_variants(self):
         self._yellow_bird = tkinter.Radiobutton(self._precondition_window, text='Yellow',
@@ -142,9 +139,6 @@ class PreconditionsGUI:
         self._blue_bird = tkinter.Radiobutton(self._precondition_window, text='Blue',
                                               variable=self._bird_color, value=3,
                                               font=self._configs.gui_precondition_radio_buttons_font)
-        self._radio_buttons.append(self._yellow_bird)
-        self._radio_buttons.append(self._red_bird)
-        self._radio_buttons.append(self._blue_bird)
 
     def _create_pipes_color_variants(self):
         self._green_pipes = tkinter.Radiobutton(self._precondition_window, text='Green',
@@ -153,8 +147,6 @@ class PreconditionsGUI:
         self._red_pipes = tkinter.Radiobutton(self._precondition_window, text='Red',
                                               variable=self._pipes_color, value=2,
                                               font=self._configs.gui_precondition_radio_buttons_font)
-        self._radio_buttons.append(self._green_pipes)
-        self._radio_buttons.append(self._red_pipes)
 
     def _create_screen_resolution_variants(self):
         self._1920x1080 = tkinter.Radiobutton(self._precondition_window, text='1920x1080',
@@ -175,13 +167,6 @@ class PreconditionsGUI:
         self._1280x720 = tkinter.Radiobutton(self._precondition_window, text='1280x720',
                                              variable=self._screen_resolution, value=6,
                                              font=self._configs.gui_precondition_radio_buttons_font)
-
-        self._radio_buttons.append(self._1920x1080)
-        self._radio_buttons.append(self._1600x900)
-        self._radio_buttons.append(self._1536x864)
-        self._radio_buttons.append(self._1440x900)
-        self._radio_buttons.append(self._1366x768)
-        self._radio_buttons.append(self._1280x720)
 
     def _place_entries(self):
         self._lives_entry.place(x=self._configs.gui_precondition_entry_X_distance_from_label,
@@ -312,16 +297,18 @@ class PreconditionsGUI:
         path_to_background = self._background_picture_browser.show()
         if path_to_background != '' and path_to_background != ():
             self._configs.path_to_background_picture = path_to_background
-            self._destroy_labels_entries_radiobuttons_and_buttons()
-            self._create_and_place()
+            self._destroy_labels_and_buttons()
+            self._create_and_place_labels()
+            self._create_and_place_buttons()
 
     def _change_music(self):
         self._music_browser = filedialog.Open(filetypes=self._configs.gui_music_filetypes)
         path_to_music = self._music_browser.show()
         if path_to_music != '' and path_to_music != ():
             self._configs.path_to_music = path_to_music
-            self._destroy_labels_entries_radiobuttons_and_buttons()
-            self._create_and_place()
+            self._destroy_labels_and_buttons()
+            self._create_and_place_labels()
+            self._create_and_place_buttons()
 
     def _fill_last_configs(self, difficulty_index, lives, bird_color_index, pipes_color_index, screen_resolution_index):
         self._last_configs['difficulty_index'] = difficulty_index
@@ -332,7 +319,7 @@ class PreconditionsGUI:
         self._last_configs['path_to_background'] = self._configs.path_to_background_picture
         self._last_configs['path_to_music'] = self._configs.path_to_music
 
-    def _get_fata_from_gui_fields(self):
+    def _get_data_from_gui_fields(self):
         self._difficulty_index = self._difficulty.get()
         self._lives = int(self._lives_entry.get())
         self._bird_color_index = self._bird_color.get()
@@ -353,7 +340,7 @@ class PreconditionsGUI:
         self._configs.record_from_database = record_on_current_configs
 
     def _play(self):
-        self._get_fata_from_gui_fields()
+        self._get_data_from_gui_fields()
 
         self._fill_last_configs(self._difficulty_index, self._lives, self._bird_color_index,
                                 self._pipes_color_index, self._screen_resolution_index)
@@ -366,16 +353,14 @@ class PreconditionsGUI:
         flappy_bird_game = FlappyBirdGame(self._configs, self._database)
         flappy_bird_game.main()
 
-    def _destroy_labels_entries_radiobuttons_and_buttons(self):
+    def _destroy_labels_and_buttons(self):
         for label in self._labels:
             label.destroy()
-        for entry in self._entries:
-            entry.destroy()
         for button in self._buttons:
             button.destroy()
-        for radiobutton in self._radio_buttons:
-            radiobutton.destroy()
 
     def main(self):
-        self._create_and_place()
+        self._create_and_place_labels()
+        self._create_and_place_entries()
+        self._create_and_place_buttons()
         self._precondition_window.mainloop()

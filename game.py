@@ -394,3 +394,5 @@ class FlappyBirdGame:
 
         if self._record >= self._configs.record_from_database:
             self._database.upload_record(self._record)
+
+        self._database.close_connection()
